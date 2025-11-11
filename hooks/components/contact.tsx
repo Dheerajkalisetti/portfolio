@@ -1,27 +1,43 @@
 "use client"
 
-import type React from "react"
-
+import { useState } from "react"
+import { createClient } from "@supabase/supabase-js"
 import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
-import { useState } from "react"
+
+// Initialize Supabase client
+const supabaseUrl = "https://iixdzozjmpxkfpuhyvob.supabase.co"
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpeGR6b3pqbXB4a2ZwdWh5dm9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4ODc1ODEsImV4cCI6MjA3ODQ2MzU4MX0.pKMVdv3hhze-gDkS0H5_KQrEn_R4yVzM2dhTekFUels"
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export default function Contact() {
-  const { ref, inView } = useInView({
-    threshold: 0.3,
-    triggerOnce: true,
-  })
+  const { ref, inView } = useInView({ threshold: 0.3, triggerOnce: true })
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     message: "",
   })
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    console.log("Form submitted:", formData)
+    setStatus("loading")
+
+    const { data, error } = await supabase
+      .from("contact_messages") // <-- Your Supabase table name
+      .insert([formData])
+
+    if (error) {
+      console.error("Error submitting form:", error)
+      setStatus("error")
+    } else {
+      console.log("Form submitted:", data)
+      setStatus("success")
+      setFormData({ name: "", email: "", message: "" })
+    }
   }
 
   const socialLinks = [
@@ -31,7 +47,11 @@ export default function Contact() {
   ]
 
   return (
-    <section id="contact" ref={ref} className="relative py-20 px-6 border-t border-neon-purple/20">
+    <section
+      id="contact"
+      ref={ref}
+      className="relative py-20 px-6 border-t border-neon-purple/20"
+    >
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,8 +65,7 @@ export default function Contact() {
             </span>
           </h2>
           <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-            Have a project in mind or want to collaborate? I'd love to hear from you. Reach out and let's create
-            something amazing together.
+            Have a project in mind or want to collaborate? I'd love to hear from you.
           </p>
         </motion.div>
 
@@ -62,29 +81,45 @@ export default function Contact() {
               type="text"
               placeholder="Your Name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
               className="px-4 py-3 rounded-lg bg-background/50 border border-foreground/20 text-foreground placeholder-foreground/40 focus:outline-none focus:border-electric-blue focus:ring-1 focus:ring-electric-blue transition-all duration-300"
             />
             <input
               type="email"
               placeholder="Your Email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              required
               className="px-4 py-3 rounded-lg bg-background/50 border border-foreground/20 text-foreground placeholder-foreground/40 focus:outline-none focus:border-electric-blue focus:ring-1 focus:ring-electric-blue transition-all duration-300"
             />
           </div>
           <textarea
             placeholder="Your Message"
             value={formData.message}
-            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, message: e.target.value })
+            }
             rows={5}
+            required
             className="w-full px-4 py-3 rounded-lg bg-background/50 border border-foreground/20 text-foreground placeholder-foreground/40 focus:outline-none focus:border-electric-blue focus:ring-1 focus:ring-electric-blue transition-all duration-300 resize-none"
           />
           <button
             type="submit"
-            className="mt-6 w-full px-8 py-3 rounded-full bg-gradient-to-r from-electric-blue to-aqua text-background font-semibold hover:shadow-lg hover:shadow-electric-blue/50 transition-all duration-300"
+            disabled={status === "loading"}
+            className="mt-6 w-full px-8 py-3 rounded-full bg-gradient-to-r from-electric-blue to-aqua text-background font-semibold hover:shadow-lg hover:shadow-electric-blue/50 transition-all duration-300 disabled:opacity-50"
           >
-            Send Message
+            {status === "loading"
+              ? "Sending..."
+              : status === "success"
+              ? "Message Sent!"
+              : status === "error"
+              ? "Try Again"
+              : "Send Message"}
           </button>
         </motion.form>
 
