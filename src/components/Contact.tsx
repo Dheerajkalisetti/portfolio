@@ -117,6 +117,7 @@ export default function Contact() {
 
     try {
       // Replace with your EmailJS service ID and template ID
+      
       const serviceId = 'service_mi3t3lk'; // e.g., 'service_abc123'
       const templateId = 'template_3hehj47'; // e.g., 'template_def456'
 
